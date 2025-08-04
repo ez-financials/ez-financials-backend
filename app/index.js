@@ -3,7 +3,8 @@ import dotenv from 'dotenv';
 import authRoutes from './routes/authRoutes.js';
 import { errorHandler } from './middlewares/errorHandler.js';
 import connectDB from './db/connectDB.js';
-
+import bcrypt from 'bcryptjs';       // or 'bcrypt'
+import jwt from 'jsonwebtoken';
 dotenv.config();
 // Load environment variables
 dotenv.config();

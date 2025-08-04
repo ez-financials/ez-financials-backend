@@ -2,8 +2,8 @@ import User from '../models/User.js';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { generateOTP } from '../utils/otp.js';
-import { sendEmail } from '../utils/email.js';
-import { sendSMS } from '../utils/sms.js';
+import { sendEmail } from '../utils/awsEmail.js';
+import { sendSMS } from '../utils/awsSms.js';
 import uploadToCloudinary from '../utils/uploadToCloudinary.js';
 import upload from '../middlewares/localUpload.js';
 import {
@@ -110,11 +110,12 @@ export async function signupStep2(req, res, next) {
     user.idType = idType;
     // Upload front image to Cloudinary
     const frontResult = await uploadToCloudinary(req.files.idFront[0].path, 'user_ids');
-    user.idFrontUrl = frontResult.secure_url;
+    console.log('Front image uploaded:', frontResult);
+    user.idFrontUrl = frontResult;
     // Upload back image if provided
     if (req.files.idBack) {
       const backResult = await uploadToCloudinary(req.files.idBack[0].path, 'user_ids');
-      user.idBackUrl = backResult.secure_url;
+      user.idBackUrl = backResult;
     }
     user.idStatus = 'under_review';
     await user.save();
@@ -146,23 +147,51 @@ export async function signupStep3(req, res, next) {
     next(err);
   }
 }
-
 export async function login(req, res, next) {
   try {
     const { error } = loginSchema.validate(req.body);
-    if (error) return res.status(400).json({ success: false, message: error.details[0].message });
+    if (error)
+      return res.status(400).json({ success: false, message: error.details[0].message });
+
     const { email, password } = req.body;
+
     const user = await User.findOne({ email });
-    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
-    if (!user.isVerified) return res.status(403).json({ success: false, message: 'Email not verified' });
+    if (!user)
+      return res.status(404).json({ success: false, message: 'User not found' });
+
+    if (!user.isVerified)
+      return res.status(403).json({ success: false, message: 'Email not verified' });
+
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(400).json({ success: false, message: 'Invalid credentials' });
-    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
-    res.json({ success: true, token });
+    if (!isMatch)
+      return res.status(400).json({ success: false, message: 'Invalid credentials' });
+
+    const token = jwt.sign(
+      { userId: user._id },
+      process.env.JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    res.status(200).json({
+      success: true,
+      message: 'Login successful',
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        isVerified: user.isVerified,
+      },
+    });
+
   } catch (err) {
+    console.error('Login Error:', err);
     next(err);
   }
 }
+
+
 
 export async function forgotPassword(req, res, next) {
   try {
