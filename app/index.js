@@ -3,28 +3,27 @@ import dotenv from 'dotenv';
 import authRoutes from './routes/authRoutes.js';
 import { errorHandler } from './middlewares/errorHandler.js';
 import connectDB from './db/connectDB.js';
-import bcrypt from 'bcryptjs';       // or 'bcrypt'
-import jwt from 'jsonwebtoken';
-dotenv.config();
-// Load environment variables
+import sumsubRoutes from './routes/sumsubRoutes.js';
+
 dotenv.config();
 
 const app = express();
 
 // Middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '20mb' }));
+app.use(express.urlencoded({ extended: true, limit: '20mb' }));
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/sumsub', sumsubRoutes);
 
-// Error handler
+// Error handler (keep last)
 app.use(errorHandler);
 
 // Connect to DB
 connectDB();
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
