@@ -15,6 +15,7 @@ import {
 } from '../controllers/authController.js';
 import multer from 'multer';
 import { authenticateToken } from '../middlewares/authMiddleware.js';
+import { webhookHandler } from '../controllers/sumsubController.js';
 // import { uploadFields } from '../middlewares/uploadMiddleware.js';
 
 const router = express.Router();
@@ -31,6 +32,7 @@ router.post('/signup/step2', authenticateToken, localIdUpload, signupStep2); // 
 router.post('/signup/step2-json', authenticateToken, memoryUpload.any(), signupStep2Json); // Upload ID via JSON (base64) or form-data with optional files
 router.post('/signup/step3', authenticateToken, signupStep3); // Card choice & address
 router.get('/kyc-status', authenticateToken, kycStatus);
+router.post('/webhooks', webhookHandler);
 
 // Auth
 router.post('/login', login);
